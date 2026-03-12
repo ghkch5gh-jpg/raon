@@ -1,0 +1,17 @@
+{
+  "name": "우리들의 가계부",
+  "short_name": "가계부",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#a78bfa",
+  "description": "우리 부부를 위한 프리미엄 스마트 가계부",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
