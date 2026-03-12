@@ -254,9 +254,17 @@ function initTabs() {
             const targetId = btn.getAttribute('data-tab');
             document.getElementById(targetId).classList.add('active');
 
-            // Both FABs are globally visible
-            if (fabTx) fabTx.style.display = 'flex';
-            if (fabLoan) fabLoan.style.display = 'flex';
+            // Toggle FAB visibility based on active tab
+            if (targetId === 'tab-transactions') {
+                if (fabTx) fabTx.style.display = 'flex';
+                if (fabLoan) fabLoan.style.display = 'none';
+            } else if (targetId === 'tab-loans') {
+                if (fabTx) fabTx.style.display = 'none';
+                if (fabLoan) fabLoan.style.display = 'flex';
+            } else {
+                if (fabTx) fabTx.style.display = 'none';
+                if (fabLoan) fabLoan.style.display = 'none';
+            }
         });
     });
 
@@ -274,15 +282,15 @@ function initFabModals() {
 
     if (fabAddTx && txModal) {
         fabAddTx.addEventListener('click', () => {
-            txModal.style.display = 'flex';
+            txModal.classList.add('active');
         });
         
         closeTxBtn.addEventListener('click', () => {
-            txModal.style.display = 'none';
+            txModal.classList.remove('active');
         });
 
         txModal.addEventListener('click', (e) => {
-            if (e.target === txModal) txModal.style.display = 'none';
+            if (e.target === txModal) txModal.classList.remove('active');
         });
     }
 
@@ -293,15 +301,15 @@ function initFabModals() {
 
     if (fabAddLoan && loanModal) {
         fabAddLoan.addEventListener('click', () => {
-            loanModal.style.display = 'flex';
+            loanModal.classList.add('active');
         });
 
         closeLoanBtn.addEventListener('click', () => {
-            loanModal.style.display = 'none';
+            loanModal.classList.remove('active');
         });
 
         loanModal.addEventListener('click', (e) => {
-            if (e.target === loanModal) loanModal.style.display = 'none';
+            if (e.target === loanModal) loanModal.classList.remove('active');
         });
     }
 }
@@ -373,7 +381,7 @@ async function handleAddTransaction(e) {
 
     // Close Modal after success
     const txModal = document.getElementById('add-transaction-modal');
-    if (txModal) txModal.style.display = 'none';
+    if (txModal) txModal.classList.remove('active');
 }
 
 // Delete Transaction
@@ -725,7 +733,7 @@ async function handleAddLoan(e) {
 
     // Close Modal
     const loanModal = document.getElementById('add-loan-modal');
-    if (loanModal) loanModal.style.display = 'none';
+    if (loanModal) loanModal.classList.remove('active');
 }
 
 window.deleteLoan = async function(id) {
