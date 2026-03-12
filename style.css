@@ -1502,7 +1502,9 @@ input[value="Common"]:checked + .toggle-btn { color: #f59e0b; }
     
     .calendar-days-container .calendar-day {
         min-height: 50px;
+        max-height: 80px;
         padding: 0.25rem;
+        overflow-y: auto;
     }
     
     .calendar-day-number {
@@ -1511,5 +1513,103 @@ input[value="Common"]:checked + .toggle-btn { color: #f59e0b; }
     
     .trend-chart-container {
         height: 120px;
+    }
+}
+
+/* ---- Lock Screen ---- */
+.lock-screen-container {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    z-index: 10000;
+}
+
+.lock-panel {
+    text-align: center;
+    padding: 3rem 2rem;
+    max-width: 350px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.lock-icon {
+    font-size: 3rem;
+    color: #a78bfa;
+    margin-bottom: 1rem;
+    animation: icon-float 3s ease-in-out infinite;
+}
+
+.lock-panel h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, #a78bfa, #f472b6);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.lock-panel p {
+    color: #94a3b8;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+#lock-password-input {
+    text-align: center;
+    letter-spacing: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#lock-password-input::placeholder {
+    letter-spacing: normal;
+    font-size: 1rem;
+    font-weight: normal;
+}
+
+/* ---- Floating Action Button (FAB) ---- */
+.fab-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+    color: white;
+    font-size: 1.75rem;
+    border: none;
+    box-shadow: 0 10px 25px rgba(244, 114, 182, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.fab-btn:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 15px 35px rgba(244, 114, 182, 0.6);
+}
+
+.fab-btn:active {
+    transform: translateY(2px) scale(0.95);
+}
+
+@media (max-width: 768px) {
+    .fab-btn {
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 55px;
+        height: 55px;
+        font-size: 1.5rem;
     }
 }

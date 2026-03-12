@@ -14,6 +14,7 @@ let appTitle = '우리의 가계부';
 let appLogoEmoji = '👛';
 let personAEmoji = '👨';
 let personBEmoji = '👩';
+let appPassword = '0716';
 
 let customCategories = [
     { id: '1', name: '식비', color: '#ef4444' },
@@ -87,6 +88,7 @@ async function init() {
             appLogoEmoji = settingsData.app_logo || appLogoEmoji;
             personAEmoji = settingsData.person_a_emoji || personAEmoji;
             personBEmoji = settingsData.person_b_emoji || personBEmoji;
+            appPassword = settingsData.app_password || appPassword;
         }
 
         // Fetch Categories
@@ -141,6 +143,9 @@ async function init() {
     // Init Tabs
     initTabs();
 
+    // Init FAB Modals
+    initFabModals();
+
     // Init Calendar & Modal & Emoji
     initCalendar();
     initMemoModal();
@@ -158,8 +163,77 @@ async function init() {
     // Init Analysis Events
     initAnalysis();
 
-    // Initial Render
-    render();
+    // Init Password Setting Evenets
+    const passwordForm = document.getElementById('password-form');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', handlePasswordUpdate);
+    }
+
+    // Check Session Auth
+    checkAuthentication();
+}
+
+function checkAuthentication() {
+    const lockScreen = document.getElementById('lock-screen');
+    const mainApp = document.getElementById('main-app-container');
+    const lockForm = document.getElementById('lock-form');
+    const lockInput = document.getElementById('lock-password-input');
+    const lockError = document.getElementById('lock-error-msg');
+
+    if (!lockScreen || !mainApp) return;
+
+    // Check if recently authenticated in this session
+    if (sessionStorage.getItem('isAuthenticated') === 'true') {
+        lockScreen.style.display = 'none';
+        mainApp.style.display = 'flex';
+        render();
+        return;
+    }
+
+    // Not authenticated -> Show lock screen
+    lockScreen.style.display = 'flex';
+    mainApp.style.display = 'none';
+
+    if (lockForm) {
+        lockForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const inputVal = lockInput.value.trim();
+            if (inputVal === appPassword) {
+                // Success
+                sessionStorage.setItem('isAuthenticated', 'true');
+                lockScreen.style.display = 'none';
+                mainApp.style.display = 'flex';
+                render();
+            } else {
+                // Fail
+                lockError.style.display = 'block';
+                lockInput.value = '';
+                lockInput.focus();
+            }
+        });
+    }
+}
+
+// Update App Password
+async function handlePasswordUpdate(e) {
+    e.preventDefault();
+    const newPwd = document.getElementById('new-password').value.trim();
+    if (newPwd.length !== 4) {
+        alert('비밀번호는 4자리로 입력해주세요.');
+        return;
+    }
+
+    // Optimistic Update
+    appPassword = newPwd;
+    document.getElementById('new-password').value = '';
+    alert('비밀번호가 변경되었습니다!');
+
+    // DB Update
+    const { error } = await supabaseClient.from('app_settings').update({ app_password: appPassword }).eq('id', 1);
+    if (error) {
+        console.error('Failed to update app password', error);
+        alert('서버 저장에 실패했습니다. 다음 접속 시 풀릴 수 있습니다.');
+    }
 }
 
 // Initialize Tabs
@@ -179,6 +253,47 @@ function initTabs() {
             document.getElementById(targetId).classList.add('active');
         });
     });
+}
+
+// Initialize FAB Modals
+function initFabModals() {
+    // Transaction Modal
+    const txModal = document.getElementById('add-transaction-modal');
+    const fabAddTx = document.getElementById('fab-add-transaction');
+    const closeTxBtn = document.querySelector('.close-add-transaction-modal');
+
+    if (fabAddTx && txModal) {
+        fabAddTx.addEventListener('click', () => {
+            txModal.style.display = 'flex';
+        });
+        
+        closeTxBtn.addEventListener('click', () => {
+            txModal.style.display = 'none';
+        });
+
+        txModal.addEventListener('click', (e) => {
+            if (e.target === txModal) txModal.style.display = 'none';
+        });
+    }
+
+    // Loan Modal
+    const loanModal = document.getElementById('add-loan-modal');
+    const fabAddLoan = document.getElementById('fab-add-loan');
+    const closeLoanBtn = document.querySelector('.close-add-loan-modal');
+
+    if (fabAddLoan && loanModal) {
+        fabAddLoan.addEventListener('click', () => {
+            loanModal.style.display = 'flex';
+        });
+
+        closeLoanBtn.addEventListener('click', () => {
+            loanModal.style.display = 'none';
+        });
+
+        loanModal.addEventListener('click', (e) => {
+            if (e.target === loanModal) loanModal.style.display = 'none';
+        });
+    }
 }
 
 // Render everything
@@ -245,6 +360,10 @@ async function handleAddTransaction(e) {
         console.error('Failed to add transaction:', error);
         alert('저장에 실패했습니다.');
     }
+
+    // Close Modal after success
+    const txModal = document.getElementById('add-transaction-modal');
+    if (txModal) txModal.style.display = 'none';
 }
 
 // Delete Transaction
@@ -588,12 +707,15 @@ async function handleAddLoan(e) {
     const { data, error } = await supabaseClient.from('loans').insert([{ person, name, amount, paid }]).select(); // Omitted rate to match schema actually
     if (data && data.length > 0) {
         const item = data[0];
-        item.rate = rate; // keep local ui state
         const idx = loans.findIndex(l => l.id === uiLoan.id);
         if (idx !== -1) loans[idx] = item;
     } else if (error) {
         console.error('Failed to add loan:', error);
     }
+
+    // Close Modal
+    const loanModal = document.getElementById('add-loan-modal');
+    if (loanModal) loanModal.style.display = 'none';
 }
 
 window.deleteLoan = async function(id) {

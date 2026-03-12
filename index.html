@@ -11,7 +11,21 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
+    <!-- Lock Screen -->
+    <div id="lock-screen" class="lock-screen-container">
+        <div class="lock-panel glass-panel">
+            <div class="lock-icon"><i class="ri-lock-2-line"></i></div>
+            <h2>우리들의 비밀공간</h2>
+            <p>비밀번호를 입력해주세요.</p>
+            <form id="lock-form">
+                <input type="password" id="lock-password-input" placeholder="비밀번호 4자리" maxlength="4" required>
+                <button type="submit" class="submit-btn" style="margin-top: 1rem;">열기</button>
+            </form>
+            <p id="lock-error-msg" class="error-msg" style="display: none;">비밀번호가 일치하지 않습니다.</p>
+        </div>
+    </div>
+
+    <div class="app-container" id="main-app-container" style="display: none;">
         <!-- Header -->
         <header class="glass-panel">
             <div class="logo" style="display: flex; align-items: center; gap: 0.5rem;">
@@ -142,61 +156,10 @@
         <div class="tab-content" id="tab-transactions">
             <!-- content area -->
         <div class="content-area grid-layout-main">
-            <!-- Transaction Form -->
-            <section class="form-section glass-panel">
-                <h2>내역 추가</h2>
-                <form id="transaction-form">
-                    <div class="form-group type-toggle">
-                        <input type="radio" id="type-income" name="type" value="income">
-                        <label for="type-income" class="toggle-btn income">수입</label>
-                        <input type="radio" id="type-expense" name="type" value="expense" checked>
-                        <label for="type-expense" class="toggle-btn expense">지출</label>
-                    </div>
-
-                    <div class="form-group person-toggle">
-                        <input type="radio" id="person-a" name="person" value="A" checked>
-                        <label for="person-a" class="toggle-btn person">요한 결제</label>
-                        <input type="radio" id="person-b" name="person" value="B">
-                        <label for="person-b" class="toggle-btn person">은지 결제</label>
-                        <input type="radio" id="person-common" name="person" value="Common">
-                        <label for="person-common" class="toggle-btn person" style="flex: 1.2;">부부통장</label>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="date">날짜</label>
-                        <input type="date" id="date" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="amount">금액</label>
-                        <div class="input-with-icon">
-                            <i class="ri-money-dollar-circle-line"></i>
-                            <input type="number" id="amount" placeholder="0" required min="1">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="category">카테고리</label>
-                        <select id="category" required>
-                            <option value="식비">식비</option>
-                            <option value="교통비">교통비</option>
-                            <option value="주거비">주거/통신</option>
-                            <option value="쇼핑">쇼핑</option>
-                            <option value="문화생활">문화생활</option>
-                            <option value="저축/투자">저축/투자</option>
-                            <option value="급여">급여</option>
-                            <option value="기타">기타</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="description">내용</label>
-                        <input type="text" id="description" placeholder="상세 내역을 입력하세요" required>
-                    </div>
-
-                    <button type="submit" class="submit-btn">저장하기</button>
-                </form>
-            </section>
+            <!-- FAB for New Transaction -->
+            <button id="fab-add-transaction" class="fab-btn" title="내역 추가하기">
+                <i class="ri-add-line"></i>
+            </button>
 
             <!-- Transaction List -->
             <section class="list-section glass-panel">
@@ -249,7 +212,6 @@
                     <button id="prev-month" class="icon-btn"><i class="ri-arrow-left-s-line"></i></button>
                     <h2 id="calendar-month-display">2026. 03</h2>
                     <button id="next-month" class="icon-btn"><i class="ri-arrow-right-s-line"></i></button>
-                    <button id="today-btn" class="today-btn">이번 달 / 오늘</button>
                 </div>
                 <div class="calendar-grid">
                     <div class="weekday">일</div>
@@ -319,52 +281,10 @@
         <!-- Tab 5: Loans -->
         <div class="tab-content" id="tab-loans">
             <div class="loan-dashboard">
-                <!-- Loan Entry Form -->
-                <section class="form-section glass-panel">
-                    <h2><i class="ri-bank-card-line"></i> 대출 등록</h2>
-                    <form id="loan-form">
-                        <div class="form-group person-toggle">
-                            <input type="radio" id="loan-person-a" name="loan-person" value="A" checked>
-                            <label for="loan-person-a" class="toggle-btn person">요한</label>
-                            <input type="radio" id="loan-person-b" name="loan-person" value="B">
-                            <label for="loan-person-b" class="toggle-btn person">은지</label>
-                            <input type="radio" id="loan-person-common" name="loan-person" value="Common">
-                            <label for="loan-person-common" class="toggle-btn person">공동</label>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="loan-name">대출명 / 기관</label>
-                            <input type="text" id="loan-name" placeholder="예: 전세자금대출 (국민은행)" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="loan-amount">총 대출 원금</label>
-                            <div class="input-with-icon">
-                                <i class="ri-money-dollar-circle-line"></i>
-                                <input type="number" id="loan-amount" placeholder="0" required min="1">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group" style="flex:1;">
-                                <label for="loan-paid">지금까지 상환한 금액</label>
-                                <div class="input-with-icon">
-                                    <i class="ri-coins-line"></i>
-                                    <input type="number" id="loan-paid" placeholder="0" min="0">
-                                </div>
-                            </div>
-                            <div class="form-group" style="width: 120px;">
-                                <label for="loan-rate">대출 금리 (%)</label>
-                                <div class="input-with-icon">
-                                    <i class="ri-percent-line"></i>
-                                    <input type="number" id="loan-rate" placeholder="0.0" step="0.01" min="0">
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="submit-btn" style="background:#f59e0b;">대출 등록하기</button>
-                    </form>
-                </section>
+                <!-- FAB for New Loan -->
+                <button id="fab-add-loan" class="fab-btn" title="대출 항목 추가하기">
+                    <i class="ri-add-line"></i>
+                </button>
 
                 <!-- Loan List & Summary -->
                 <section class="list-section glass-panel">
@@ -413,6 +333,133 @@
                     <!-- JS Injected items -->
                 </div>
             </section>
+
+            <!-- App Password Setting -->
+            <section class="form-section glass-panel" style="margin-top: 2rem;">
+                <h2><i class="ri-lock-password-line"></i> 보안 설정</h2>
+                <form id="password-form" style="margin-top: 1rem;">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="new-password">새 앱 비밀번호 (4자리)</label>
+                            <input type="password" id="new-password" placeholder="예: 0716" maxlength="4" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn" style="background: #10b981;"><i class="ri-key-line"></i> 비밀번호 변경</button>
+                </form>
+            </section>
+        </div>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div class="modal-overlay" id="add-transaction-modal">
+        <div class="modal-content glass-panel" style="max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3>내역 추가</h3>
+                <button class="icon-btn close-add-transaction-modal"><i class="ri-close-line"></i></button>
+            </div>
+            <form id="transaction-form" style="margin-top: 1rem;">
+                <div class="form-group type-toggle">
+                    <input type="radio" id="type-income" name="type" value="income">
+                    <label for="type-income" class="toggle-btn income">수입</label>
+                    <input type="radio" id="type-expense" name="type" value="expense" checked>
+                    <label for="type-expense" class="toggle-btn expense">지출</label>
+                </div>
+
+                <div class="form-group person-toggle">
+                    <input type="radio" id="person-a" name="person" value="A" checked>
+                    <label for="person-a" class="toggle-btn person">요한 결제</label>
+                    <input type="radio" id="person-b" name="person" value="B">
+                    <label for="person-b" class="toggle-btn person">은지 결제</label>
+                    <input type="radio" id="person-common" name="person" value="Common">
+                    <label for="person-common" class="toggle-btn person" style="flex: 1.2;">부부통장</label>
+                </div>
+
+                <div class="form-group">
+                    <label for="date">날짜</label>
+                    <input type="date" id="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">금액</label>
+                    <div class="input-with-icon">
+                        <i class="ri-money-dollar-circle-line"></i>
+                        <input type="number" id="amount" placeholder="0" required min="1">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">카테고리</label>
+                    <select id="category" required>
+                        <option value="식비">식비</option>
+                        <option value="교통비">교통비</option>
+                        <option value="주거비">주거/통신</option>
+                        <option value="쇼핑">쇼핑</option>
+                        <option value="문화생활">문화생활</option>
+                        <option value="저축/투자">저축/투자</option>
+                        <option value="급여">급여</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">내용</label>
+                    <input type="text" id="description" placeholder="상세 내역을 입력하세요" required>
+                </div>
+
+                <button type="submit" class="submit-btn">저장하기</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Loan Modal -->
+    <div class="modal-overlay" id="add-loan-modal">
+        <div class="modal-content glass-panel" style="max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3>신규 대출 등록</h3>
+                <button class="icon-btn close-add-loan-modal"><i class="ri-close-line"></i></button>
+            </div>
+            <form id="loan-form" style="margin-top: 1rem;">
+                <div class="form-group person-toggle">
+                    <input type="radio" id="loan-person-a" name="loan-person" value="A" checked>
+                    <label for="loan-person-a" class="toggle-btn person">요한</label>
+                    <input type="radio" id="loan-person-b" name="loan-person" value="B">
+                    <label for="loan-person-b" class="toggle-btn person">은지</label>
+                    <input type="radio" id="loan-person-common" name="loan-person" value="Common">
+                    <label for="loan-person-common" class="toggle-btn person">공동</label>
+                </div>
+
+                <div class="form-group">
+                    <label for="loan-name">대출명 / 기관</label>
+                    <input type="text" id="loan-name" placeholder="예: 전세자금대출 (국민은행)" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="loan-amount">총 대출 원금</label>
+                    <div class="input-with-icon">
+                        <i class="ri-money-dollar-circle-line"></i>
+                        <input type="number" id="loan-amount" placeholder="0" required min="1">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label for="loan-paid">지금까지 상환한 금액</label>
+                        <div class="input-with-icon">
+                            <i class="ri-coins-line"></i>
+                            <input type="number" id="loan-paid" placeholder="0" min="0">
+                        </div>
+                    </div>
+                    <div class="form-group" style="width: 120px;">
+                        <label for="loan-rate">대출 금리 (%)</label>
+                        <div class="input-with-icon">
+                            <i class="ri-percent-line"></i>
+                            <input type="number" id="loan-rate" placeholder="0.0" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" style="background:#f59e0b;">대출 등록하기</button>
+            </form>
         </div>
     </div>
 
