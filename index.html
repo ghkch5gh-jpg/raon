@@ -155,11 +155,6 @@
         <!-- Tab 3: Transactions -->
         <div class="tab-content" id="tab-transactions">
             <!-- content area -->
-        <div class="content-area grid-layout-main">
-            <!-- FAB for New Transaction -->
-            <button id="fab-add-transaction" class="fab-btn" title="내역 추가하기">
-                <i class="ri-add-line"></i>
-            </button>
 
             <!-- Transaction List -->
             <section class="list-section glass-panel">
@@ -202,7 +197,6 @@
                     <div class="empty-state">내역이 없습니다.</div>
                 </div>
             </section>
-        </div>
         </div>
 
         <!-- Tab 2: Calendar -->
@@ -280,11 +274,6 @@
 
         <!-- Tab 5: Loans -->
         <div class="tab-content" id="tab-loans">
-            <div class="loan-dashboard">
-                <!-- FAB for New Loan -->
-                <button id="fab-add-loan" class="fab-btn" title="대출 항목 추가하기">
-                    <i class="ri-add-line"></i>
-                </button>
 
                 <!-- Loan List & Summary -->
                 <section class="list-section glass-panel">
@@ -303,7 +292,6 @@
                     </div>
                 </section>
             </div>
-        </div>
 
         <!-- Tab 6: Settings -->
         <div class="tab-content" id="tab-settings">
@@ -349,6 +337,15 @@
             </section>
         </div>
     </div>
+
+    <!-- Global FABs -->
+    <button id="fab-add-transaction" class="fab-btn" title="수입/지출 내역 추가하기" style="display: none;">
+        <i class="ri-add-line"></i>
+    </button>
+    
+    <button id="fab-add-loan" class="fab-btn" title="대출 항목 추가하기" style="display: none; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);">
+        <i class="ri-bank-card-line"></i>
+    </button>
 
     <!-- Add Transaction Modal -->
     <div class="modal-overlay" id="add-transaction-modal">

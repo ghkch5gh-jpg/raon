@@ -240,6 +240,8 @@ async function handlePasswordUpdate(e) {
 function initTabs() {
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
+    const fabTx = document.getElementById('fab-add-transaction');
+    const fabLoan = document.getElementById('fab-add-loan');
 
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -251,8 +253,16 @@ function initTabs() {
             btn.classList.add('active');
             const targetId = btn.getAttribute('data-tab');
             document.getElementById(targetId).classList.add('active');
+
+            // Both FABs are globally visible
+            if (fabTx) fabTx.style.display = 'flex';
+            if (fabLoan) fabLoan.style.display = 'flex';
         });
     });
+
+    // Initialize initial tab state strictly by clicking the first active tab (Dashboard usually)
+    const initialTab = document.querySelector('.tab-btn.active') || tabBtns[0];
+    if (initialTab) initialTab.click();
 }
 
 // Initialize FAB Modals
