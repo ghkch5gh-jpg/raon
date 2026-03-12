@@ -806,13 +806,6 @@ function initCalendar() {
         if (currentMonth > 11) { currentMonth = 0; currentYear++; }
         renderCalendar();
     });
-    
-    document.getElementById('today-btn').addEventListener('click', () => {
-        currentCalDate = new Date();
-        currentYear = currentCalDate.getFullYear();
-        currentMonth = currentCalDate.getMonth();
-        renderCalendar();
-    });
 }
 
 // Initialize Memo Modal
