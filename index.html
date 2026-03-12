@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부부 가계부 - Couple Ledger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-panel">
+            <div class="logo" style="display: flex; align-items: center; gap: 0.5rem;">
+                <span id="app-logo-icon" style="cursor:pointer; font-size:1.5rem; font-style:normal;" title="아이콘 변경">👛</span>
+                <h1 id="app-title-text" style="cursor: pointer; margin: 0;" title="클릭하여 제목 변경">우리의 가계부</h1>
+                <button id="edit-title-btn" class="icon-btn small" style="background: none; padding: 0; font-size: 0.8rem; width: 22px; height: 22px; min-width: 22px; min-height: 22px; display: flex; align-items: center; justify-content: center; opacity: 0.5;"><i class="ri-edit-line"></i></button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs-nav glass-panel">
+            <button class="tab-btn active" data-tab="tab-dashboard"><i class="ri-dashboard-line"></i> 요약</button>
+            <button class="tab-btn" data-tab="tab-calendar"><i class="ri-calendar-line"></i> 달력</button>
+            <button class="tab-btn" data-tab="tab-transactions"><i class="ri-list-check"></i> 변동</button>
+            <button class="tab-btn" data-tab="tab-fixed-var"><i class="ri-pie-chart-line"></i> 고정</button>
+            <button class="tab-btn" data-tab="tab-loans"><i class="ri-bank-card-line"></i> 대출</button>
+            <button class="tab-btn" data-tab="tab-settings"><i class="ri-settings-4-line"></i> 설정</button>
+        </nav>
+
+        <!-- Tab 1: Dashboard -->
+        <div class="tab-content active" id="tab-dashboard">
+            <!-- Main Dashboard -->
+        <div class="dashboard grid-layout">
+            <!-- Total Summary -->
+            <div class="summary-card total glass-panel">
+                <h3>총 잔액</h3>
+                <h2 id="total-balance">0원</h2>
+                <div class="summary-details">
+                    <div class="detail income">
+                        <span><i class="ri-arrow-up-circle-line"></i> 수입</span>
+                        <strong id="total-income">0원</strong>
+                    </div>
+                    <div class="detail expense">
+                        <span><i class="ri-arrow-down-circle-line"></i> 지출</span>
+                        <strong id="total-expense">0원</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Person A Summary -->
+            <div class="summary-card person a glass-panel">
+                <div class="person-header">
+                    <div id="avatar-dash-a" class="avatar" style="font-size: 1.5rem; background: transparent; cursor: pointer;" title="이모지 변경">👨</div>
+                    <h3>요한</h3>
+                </div>
+                <div class="person-stats">
+                    <div class="stat income">
+                        <span>수입</span>
+                        <strong id="person-a-income">0원</strong>
+                    </div>
+                    <div class="stat expense">
+                        <span>지출</span>
+                        <strong id="person-a-expense">0원</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Person B Summary -->
+            <div class="summary-card person b glass-panel">
+                <div class="person-header">
+                    <div id="avatar-dash-b" class="avatar b-avatar" style="font-size: 1.5rem; background: transparent; cursor: pointer;" title="이모지 변경">👩</div>
+                    <h3>은지</h3>
+                </div>
+                <div class="person-stats">
+                    <div class="stat income">
+                        <span>수입</span>
+                        <strong id="person-b-income">0원</strong>
+                    </div>
+                    <div class="stat expense">
+                        <span>지출</span>
+                        <strong id="person-b-expense">0원</strong>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- Analysis Section (Merged into Dashboard) -->
+            <div class="list-header" style="margin-top: 2rem; margin-bottom: 1rem;">
+                <h2><i class="ri-bar-chart-box-line"></i> 금융 리포트</h2>
+                
+                <div class="month-selector">
+                    <button id="prev-analysis-month" class="icon-btn small"><i class="ri-arrow-left-s-line"></i></button>
+                    <span id="analysis-month-display">2026. 03</span>
+                    <button id="next-analysis-month" class="icon-btn small"><i class="ri-arrow-right-s-line"></i></button>
+                </div>
+            </div>
+
+            <div class="analysis-grid">
+                <!-- 1. 카테고리별 지출 순위 -->
+                <div class="analysis-card glass-panel">
+                    <h3>카테고리별 지출 랭킹</h3>
+                    <div class="category-list" id="analysis-category-list">
+                        <!-- Categories injected by JS -->
+                        <div class="empty-state">이번 달 지출 내역이 없습니다.</div>
+                    </div>
+                </div>
+
+                <!-- 2. 저축/투자 -->
+                <div class="analysis-card glass-panel" style="justify-content: center;">
+                    <div style="text-align: center;">
+                        <i class="ri-safe-2-line" style="font-size: 3rem; color: #10b981; margin-bottom: 1rem;"></i>
+                        <h3 style="margin-bottom: 0.5rem;">저축 및 투자</h3>
+                        <div class="analysis-stat" style="margin-bottom: 0;">
+                            <span>이번 달 저축액</span>
+                            <strong id="analysis-savings-amount" style="color: #10b981;">0원</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 3. 6개월 추세 차트 (고정+변동) -->
+                <div class="analysis-card glass-panel trend-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 style="margin-bottom:0;">최근 6개월 지출 추이</h3>
+                        <div style="display:flex; gap:1rem; font-size:0.75rem;">
+                            <span style="display:flex; align-items:center; gap:0.25rem;"><span style="display:inline-block;width:10px;height:10px;background:#f59e0b;border-radius:2px;"></span>고정</span>
+                            <span style="display:flex; align-items:center; gap:0.25rem;"><span style="display:inline-block;width:10px;height:10px;background:#f43f5e;border-radius:2px;"></span>변동</span>
+                        </div>
+                    </div>
+                    <div class="trend-chart-container" id="trend-chart-container">
+                        <!-- Bars injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tab 3: Transactions -->
+        <div class="tab-content" id="tab-transactions">
+            <!-- content area -->
+        <div class="content-area grid-layout-main">
+            <!-- Transaction Form -->
+            <section class="form-section glass-panel">
+                <h2>내역 추가</h2>
+                <form id="transaction-form">
+                    <div class="form-group type-toggle">
+                        <input type="radio" id="type-income" name="type" value="income">
+                        <label for="type-income" class="toggle-btn income">수입</label>
+                        <input type="radio" id="type-expense" name="type" value="expense" checked>
+                        <label for="type-expense" class="toggle-btn expense">지출</label>
+                    </div>
+
+                    <div class="form-group person-toggle">
+                        <input type="radio" id="person-a" name="person" value="A" checked>
+                        <label for="person-a" class="toggle-btn person">요한 결제</label>
+                        <input type="radio" id="person-b" name="person" value="B">
+                        <label for="person-b" class="toggle-btn person">은지 결제</label>
+                        <input type="radio" id="person-common" name="person" value="Common">
+                        <label for="person-common" class="toggle-btn person" style="flex: 1.2;">부부통장</label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="date">날짜</label>
+                        <input type="date" id="date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">금액</label>
+                        <div class="input-with-icon">
+                            <i class="ri-money-dollar-circle-line"></i>
+                            <input type="number" id="amount" placeholder="0" required min="1">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">카테고리</label>
+                        <select id="category" required>
+                            <option value="식비">식비</option>
+                            <option value="교통비">교통비</option>
+                            <option value="주거비">주거/통신</option>
+                            <option value="쇼핑">쇼핑</option>
+                            <option value="문화생활">문화생활</option>
+                            <option value="저축/투자">저축/투자</option>
+                            <option value="급여">급여</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">내용</label>
+                        <input type="text" id="description" placeholder="상세 내역을 입력하세요" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">저장하기</button>
+                </form>
+            </section>
+
+            <!-- Transaction List -->
+            <section class="list-section glass-panel">
+                <div class="list-header">
+                    <h2>최근 내역</h2>
+                    
+                    <div class="month-selector">
+                        <button id="prev-list-month" class="icon-btn small"><i class="ri-arrow-left-s-line"></i></button>
+                        <span id="list-month-display">2026. 03</span>
+                        <button id="next-list-month" class="icon-btn small"><i class="ri-arrow-right-s-line"></i></button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <select id="filter-person">
+                            <option value="all">전체 내역 보기</option>
+                            <option value="A">요한 실적</option>
+                            <option value="B">은지 실적</option>
+                            <option value="Common">부부통장 실적</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Payment Method Summary Cards -->
+                <div class="payment-summary-cards">
+                    <div class="pay-card">
+                        <span>요한 결제액</span>
+                        <strong id="pay-sum-a">0원</strong>
+                    </div>
+                    <div class="pay-card">
+                        <span>은지 결제액</span>
+                        <strong id="pay-sum-b">0원</strong>
+                    </div>
+                    <div class="pay-card">
+                        <span>부부통장 결제</span>
+                        <strong id="pay-sum-common">0원</strong>
+                    </div>
+                </div>
+                <div class="transaction-list" id="transaction-list">
+                    <!-- Transactions will be injected here via JS -->
+                    <div class="empty-state">내역이 없습니다.</div>
+                </div>
+            </section>
+        </div>
+        </div>
+
+        <!-- Tab 2: Calendar -->
+        <div class="tab-content" id="tab-calendar">
+            <section class="calendar-section glass-panel">
+                <div class="calendar-header">
+                    <button id="prev-month" class="icon-btn"><i class="ri-arrow-left-s-line"></i></button>
+                    <h2 id="calendar-month-display">2026. 03</h2>
+                    <button id="next-month" class="icon-btn"><i class="ri-arrow-right-s-line"></i></button>
+                    <button id="today-btn" class="today-btn">이번 달 / 오늘</button>
+                </div>
+                <div class="calendar-grid">
+                    <div class="weekday">일</div>
+                    <div class="weekday">월</div>
+                    <div class="weekday">화</div>
+                    <div class="weekday">수</div>
+                    <div class="weekday">목</div>
+                    <div class="weekday">금</div>
+                    <div class="weekday">토</div>
+                    <!-- Days will be inserted dynamically by app.js -->
+                    <div class="calendar-days-container" id="calendar-days"></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Tab 4: Fixed Expenses -->
+        <div class="tab-content" id="tab-fixed-var">
+            <div class="fixed-expenses-grid">
+                <!-- 요한(남편) 고정지출 -->
+                <section class="fixed-section glass-panel">
+                    <div class="person-header">
+                        <div id="avatar-fixed-a" class="avatar" style="font-size: 1.5rem; background: transparent; cursor: pointer;" title="이모지 변경">👨</div>
+                        <h3>요한의 고정 지출</h3>
+                    </div>
+                    <form id="fixed-form-a" class="fixed-form">
+                        <div class="form-row">
+                            <input type="text" id="fixed-desc-a" placeholder="예: 넷플릭스" required>
+                            <input type="number" id="fixed-amount-a" placeholder="금액" required min="1">
+                            <button type="submit" class="icon-btn small submit-fixed"><i class="ri-add-line"></i></button>
+                        </div>
+                    </form>
+                    <div class="fixed-list" id="fixed-list-a">
+                        <!-- Items injected by JS -->
+                        <div class="empty-state">등록된 고정 지출이 없습니다.</div>
+                    </div>
+                    <div class="fixed-total">
+                        <span>합계</span>
+                        <strong id="fixed-total-a">0원</strong>
+                    </div>
+                </section>
+
+                <!-- 은지(아내) 고정지출 -->
+                <section class="fixed-section glass-panel">
+                    <div class="person-header">
+                        <div id="avatar-fixed-b" class="avatar b-avatar" style="font-size: 1.5rem; background: transparent; cursor: pointer;" title="이모지 변경">👩</div>
+                        <h3>은지의 고정 지출</h3>
+                    </div>
+                    <form id="fixed-form-b" class="fixed-form">
+                        <div class="form-row">
+                            <input type="text" id="fixed-desc-b" placeholder="예: 유튜브 프리미엄" required>
+                            <input type="number" id="fixed-amount-b" placeholder="금액" required min="1">
+                            <button type="submit" class="icon-btn small submit-fixed"><i class="ri-add-line"></i></button>
+                        </div>
+                    </form>
+                    <div class="fixed-list" id="fixed-list-b">
+                        <!-- Items injected by JS -->
+                        <div class="empty-state">등록된 고정 지출이 없습니다.</div>
+                    </div>
+                    <div class="fixed-total">
+                        <span>합계</span>
+                        <strong id="fixed-total-b">0원</strong>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Tab 5: Loans -->
+        <div class="tab-content" id="tab-loans">
+            <div class="loan-dashboard">
+                <!-- Loan Entry Form -->
+                <section class="form-section glass-panel">
+                    <h2><i class="ri-bank-card-line"></i> 대출 등록</h2>
+                    <form id="loan-form">
+                        <div class="form-group person-toggle">
+                            <input type="radio" id="loan-person-a" name="loan-person" value="A" checked>
+                            <label for="loan-person-a" class="toggle-btn person">요한</label>
+                            <input type="radio" id="loan-person-b" name="loan-person" value="B">
+                            <label for="loan-person-b" class="toggle-btn person">은지</label>
+                            <input type="radio" id="loan-person-common" name="loan-person" value="Common">
+                            <label for="loan-person-common" class="toggle-btn person">공동</label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="loan-name">대출명 / 기관</label>
+                            <input type="text" id="loan-name" placeholder="예: 전세자금대출 (국민은행)" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loan-amount">총 대출 원금</label>
+                            <div class="input-with-icon">
+                                <i class="ri-money-dollar-circle-line"></i>
+                                <input type="number" id="loan-amount" placeholder="0" required min="1">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex:1;">
+                                <label for="loan-paid">지금까지 상환한 금액</label>
+                                <div class="input-with-icon">
+                                    <i class="ri-coins-line"></i>
+                                    <input type="number" id="loan-paid" placeholder="0" min="0">
+                                </div>
+                            </div>
+                            <div class="form-group" style="width: 120px;">
+                                <label for="loan-rate">대출 금리 (%)</label>
+                                <div class="input-with-icon">
+                                    <i class="ri-percent-line"></i>
+                                    <input type="number" id="loan-rate" placeholder="0.0" step="0.01" min="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn" style="background:#f59e0b;">대출 등록하기</button>
+                    </form>
+                </section>
+
+                <!-- Loan List & Summary -->
+                <section class="list-section glass-panel">
+                    <div class="list-header">
+                        <h2>대출 목록</h2>
+                    </div>
+                    
+                    <div class="loan-summary-box">
+                        <span>총 남은 대출금</span>
+                        <strong id="total-loan-amount">0원</strong>
+                    </div>
+
+                    <div class="loan-list" id="loan-list">
+                        <!-- Loan Cards injected by JS -->
+                        <div class="empty-state">등록된 대출 내역이 없습니다.</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Tab 6: Settings -->
+        <div class="tab-content" id="tab-settings">
+            <section class="form-section glass-panel">
+                <h2><i class="ri-equalizer-line"></i> 카테고리 설정</h2>
+                <form id="category-form" style="margin-top: 1rem;">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label for="cat-name">새 카테고리 이름</label>
+                            <input type="text" id="cat-name" placeholder="예: 병원비" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="cat-color">테마 색상</label>
+                            <input type="color" id="cat-color" value="#3b82f6" style="height: 42px; padding: 2px;">
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn"><i class="ri-add-line"></i> 카테고리 추가</button>
+                </form>
+            </section>
+
+            <section class="list-section glass-panel" style="margin-top: 2rem;">
+                <div class="list-header">
+                    <h2>현재 카테고리 목록</h2>
+                </div>
+                <!-- Categories list -->
+                <div class="category-settings-list" id="category-settings-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto;">
+                    <!-- JS Injected items -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Memo Modal -->
+    <div class="modal-overlay" id="memo-modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3 id="modal-date-title">2026. 03. 02</h3>
+                <button class="close-btn" id="close-modal"><i class="ri-close-line"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="memo-input">오늘의 메모/일정</label>
+                    <textarea id="memo-input" placeholder="예) 놀이공원 간 날, 외식 등 메모를 남겨보세요." rows="4"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="submit-btn" id="save-memo-btn">메모 저장</button>
+                    <!-- 기존처럼 기입 폼으로 가는 버튼도 함께 제공 -->
+                    <button class="secondary-btn" id="go-to-transaction-btn"><i class="ri-add-line"></i> 수입/지출 기입하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan Repayment Modal -->
+    <div class="modal-overlay" id="loan-modal">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>대출금 상환하기</h3>
+                <button class="icon-btn close-loan-modal"><i class="ri-close-line"></i></button>
+            </div>
+            <form id="loan-pay-form">
+                <div class="form-group">
+                    <label for="loan-pay-input">이번에 상환한 금액</label>
+                    <div class="input-with-icon">
+                        <i class="ri-coins-line"></i>
+                        <input type="number" id="loan-pay-input" placeholder="예: 500000" min="1" required>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" style="background:#10b981;">상환액 누적하기</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Emoji Picker Modal -->
+    <div class="modal-overlay" id="emoji-modal">
+        <div class="modal-content glass-panel" style="max-width: 320px;">
+            <div class="modal-header">
+                <h3>이모지 선택</h3>
+                <button class="icon-btn close-emoji-modal"><i class="ri-close-line"></i></button>
+            </div>
+            <div class="emoji-grid" id="emoji-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; padding: 1rem 0; font-size: 1.75rem; max-height: 250px; overflow-y: auto; text-align: center;">
+                <!-- Emojis injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
