@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#a78bfa">
     <link rel="apple-touch-icon" href="icon-512.png">
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="toss-style.css?v=2">
 </head>
 <body>
     <!-- Lock Screen -->
@@ -432,6 +432,19 @@
                     </select>
                 </div>
 
+                <!-- 할부 결제 옵션 (지출일 경우에만 활성화) -->
+                <div class="form-group" id="installment-group">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="checkbox" id="is-installment" style="width: auto; margin: 0; cursor: pointer;">
+                        <label for="is-installment" style="cursor: pointer; user-select: none;">할부 결제 (개월 수 분할 등록)</label>
+                    </div>
+                    <div id="installment-months-container" style="display: none;">
+                        <label for="installment-months" style="font-size: 0.8rem;">할부 개월 수</label>
+                        <input type="number" id="installment-months" min="2" max="60" placeholder="예: 3" style="width: 100px; display: inline-block;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 0.5rem;">개월</span>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="description">내용</label>
                     <input type="text" id="description" placeholder="상세 내역을 입력하세요" required>
@@ -565,6 +578,6 @@
 
     <!-- Supabase and App Script -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>

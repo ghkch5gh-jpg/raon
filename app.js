@@ -161,6 +161,35 @@ async function init() {
     form.addEventListener('submit', handleAddTransaction);
     filterPersonEl.addEventListener('change', render);
 
+    // Installment UI Toggle Logic
+    const typeIncomeRadio = document.getElementById('type-income');
+    const typeExpenseRadio = document.getElementById('type-expense');
+    const installmentGroup = document.getElementById('installment-group');
+    const isInstallmentCheck = document.getElementById('is-installment');
+    const installmentMonthsContainer = document.getElementById('installment-months-container');
+
+    const toggleInstallmentVisibility = () => {
+        if (typeExpenseRadio && typeExpenseRadio.checked) {
+            installmentGroup.style.display = 'block';
+        } else {
+            installmentGroup.style.display = 'none';
+            isInstallmentCheck.checked = false;
+            installmentMonthsContainer.style.display = 'none';
+        }
+    };
+    
+    if (typeIncomeRadio) typeIncomeRadio.addEventListener('change', toggleInstallmentVisibility);
+    if (typeExpenseRadio) typeExpenseRadio.addEventListener('change', toggleInstallmentVisibility);
+    
+    if (isInstallmentCheck) {
+        isInstallmentCheck.addEventListener('change', (e) => {
+            installmentMonthsContainer.style.display = e.target.checked ? 'block' : 'none';
+            if (e.target.checked) {
+                document.getElementById('installment-months').focus();
+            }
+        });
+    }
+
     // Init Tabs
     initTabs();
 
@@ -371,38 +400,85 @@ async function handleAddTransaction(e) {
     const category = document.getElementById('category').value;
     const description = document.getElementById('description').value;
 
+    const isInstallment = document.getElementById('is-installment') && document.getElementById('is-installment').checked;
+    let months = 1;
+    if (isInstallment && type === 'expense') {
+        const monthsInput = document.getElementById('installment-months');
+        months = Number(monthsInput.value);
+        if (months < 2 || isNaN(months)) {
+            customAlert('할부 개월 수는 최소 2개월 이상 입력해주세요.');
+            monthsInput.focus();
+            return;
+        }
+    }
+
     if (!date || amount <= 0 || !category || !description) {
         customAlert('모든 필드를 올바르게 입력해주세요.');
         return;
     }
 
-    const newTransaction = {
-        type,
-        person,
-        date,
-        amount,
-        category,
-        description
-    };
+    const txsToInsert = [];
+    const baseDate = new Date(date);
 
-    // Optimistic UI update
-    const uiTx = { ...newTransaction, id: Date.now().toString() };
-    transactions.unshift(uiTx);
+    if (months > 1) {
+        const monthlyAmount = Math.floor(amount / months);
+        const remainder = amount % months; // First month gets the rounded remainder if any
+
+        for (let i = 0; i < months; i++) {
+            // Calculate next date (exactly one month apart)
+            const iterDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
+            
+            // Format YYYY-MM-DD
+            const yyyy = iterDate.getFullYear();
+            const mm = String(iterDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(iterDate.getDate()).padStart(2, '0');
+            const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+            txsToInsert.push({
+                type,
+                person,
+                date: formattedDate,
+                amount: i === 0 ? monthlyAmount + remainder : monthlyAmount,
+                category,
+                description: `${description} (${i + 1}/${months})`
+            });
+        }
+    } else {
+        txsToInsert.push({
+            type,
+            person,
+            date,
+            amount,
+            category,
+            description
+        });
+    }
+
+    // Optimistic UI update (insert first one locally for immediate feedback)
+    const uiTxList = txsToInsert.map(tx => ({ ...tx, id: 'temp-' + Date.now().toString() + Math.random() }));
+    transactions.unshift(...uiTxList);
     
     // Reset inputs
     document.getElementById('amount').value = '';
     document.getElementById('description').value = '';
+    const isInstallCheckVal = document.getElementById('is-installment');
+    if (isInstallCheckVal) {
+        isInstallCheckVal.checked = false;
+        document.getElementById('installment-months-container').style.display = 'none';
+        document.getElementById('installment-months').value = '';
+    }
     
     render();
 
     // Supabase Insert
-    const { data, error } = await supabaseClient.from('transactions').insert([newTransaction]).select();
+    const { data, error } = await supabaseClient.from('transactions').insert(txsToInsert).select();
     if (data && data.length > 0) {
-        // Replace optimistic ID with real DB UUID
-        const idx = transactions.findIndex(t => t.id === uiTx.id);
-        if (idx !== -1) transactions[idx] = data[0];
+        // Reload transactions entirely to ensure correct DB mapping and ordering
+        const { data: newTxsData } = await supabaseClient.from('transactions').select('*').order('created_at', { ascending: false });
+        if (newTxsData) transactions = newTxsData;
+        render();
     } else if (error) {
-        console.error('Failed to add transaction:', error);
+        console.error('Failed to add transaction(s):', error);
         alert('저장에 실패했습니다.');
     }
 
@@ -438,13 +514,16 @@ function renderList() {
     }
     
     // Filter by selected person AND selected month
-    const filteredTransactions = transactions.filter(t => {
+    let filteredTransactions = transactions.filter(t => {
         const { year: stY, month: stM } = getSettlementPeriod(t.date);
         const matchesMonth = stY === currentListYear && stM === currentListMonth;
         const matchesPerson = filter === 'all' || t.person === filter;
         
         return matchesMonth && matchesPerson;
     });
+
+    // Sort chronologically by date (newest to oldest)
+    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
     
     // Calculate and update payment summaries (Only Expenses for this month, ignore person filter for sum)
     let sumA = 0;
