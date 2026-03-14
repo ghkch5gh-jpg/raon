@@ -80,12 +80,16 @@ const formatCurrency = (amount) => {
 
 // Settlement Period Logic (25th ~ 24th)
 function getSettlementPeriod(dateStr) {
-    const d = new Date(dateStr);
-    let stY = d.getFullYear();
-    let stM = d.getMonth();
+    // Force local timezone extraction by manually splitting YYYY-MM-DD
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return { year: new Date().getFullYear(), month: new Date().getMonth() };
+    
+    let stY = parseInt(parts[0], 10);
+    let stM = parseInt(parts[1], 10) - 1; // 0-indexed month
+    const stD = parseInt(parts[2], 10);
     
     // If day is >= 25, it counts towards the NEXT month's budget
-    if (d.getDate() >= 25) {
+    if (stD >= 25) {
         stM += 1;
         if (stM > 11) {
             stM = 0;
