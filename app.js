@@ -602,23 +602,27 @@ function updateSummaries() {
     const currentListYearNum = currentListYear || today.getFullYear();
     const currentListMonthNum = currentListMonth !== undefined ? currentListMonth : today.getMonth();
 
+    // 1. Calculate Variable Expenses
     const monthTxs = transactions.filter(t => {
         const { year: stY, month: stM } = getSettlementPeriod(t.date);
         return stY === currentListYearNum && stM === currentListMonthNum;
     });
 
-    // Total Stats (This month)
     const totalIncome = monthTxs.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-    const totalExpense = monthTxs.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+    let totalExpense = monthTxs.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+
+    let aIncome = monthTxs.filter(t => t.type === 'income' && t.person === 'A').reduce((acc, t) => acc + t.amount, 0);
+    let aExpense = monthTxs.filter(t => t.type === 'expense' && t.person === 'A').reduce((acc, t) => acc + t.amount, 0);
+
+    let bIncome = monthTxs.filter(t => t.type === 'income' && t.person === 'B').reduce((acc, t) => acc + t.amount, 0);
+    let bExpense = monthTxs.filter(t => t.type === 'expense' && t.person === 'B').reduce((acc, t) => acc + t.amount, 0);
+
+    // 2. Add Fixed Expenses to the Totals (Only Total Expense)
+    const totalFixed = fixedExpenses.reduce((acc, f) => acc + f.amount, 0);
+    totalExpense += totalFixed;
+
+    // 3. Final Balance
     const balance = totalIncome - totalExpense;
-
-    // Person A Stats (This month)
-    const aIncome = monthTxs.filter(t => t.type === 'income' && t.person === 'A').reduce((acc, t) => acc + t.amount, 0);
-    const aExpense = monthTxs.filter(t => t.type === 'expense' && t.person === 'A').reduce((acc, t) => acc + t.amount, 0);
-
-    // Person B Stats (This month)
-    const bIncome = monthTxs.filter(t => t.type === 'income' && t.person === 'B').reduce((acc, t) => acc + t.amount, 0);
-    const bExpense = monthTxs.filter(t => t.type === 'expense' && t.person === 'B').reduce((acc, t) => acc + t.amount, 0);
 
     // Update DOM
     els.totalBalance.textContent = formatCurrency(balance);
