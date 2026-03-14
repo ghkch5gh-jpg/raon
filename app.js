@@ -78,6 +78,23 @@ const formatCurrency = (amount) => {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(amount);
 };
 
+// Settlement Period Logic (25th ~ 24th)
+function getSettlementPeriod(dateStr) {
+    const d = new Date(dateStr);
+    let stY = d.getFullYear();
+    let stM = d.getMonth();
+    
+    // If day is >= 25, it counts towards the NEXT month's budget
+    if (d.getDate() >= 25) {
+        stM += 1;
+        if (stM > 11) {
+            stM = 0;
+            stY += 1;
+        }
+    }
+    return { year: stY, month: stM };
+}
+
 // Initialize App
 async function init() {
     try {
@@ -168,6 +185,12 @@ async function init() {
     if (passwordForm) {
         passwordForm.addEventListener('submit', handlePasswordUpdate);
     }
+    
+    // Init Data Import Events
+    const importForm = document.getElementById('import-form');
+    if (importForm) {
+        importForm.addEventListener('submit', handleDataImport);
+    }
 
     // Check Session Auth
     checkAuthentication();
@@ -219,20 +242,20 @@ async function handlePasswordUpdate(e) {
     e.preventDefault();
     const newPwd = document.getElementById('new-password').value.trim();
     if (newPwd.length !== 4) {
-        alert('비밀번호는 4자리로 입력해주세요.');
+        customAlert('비밀번호는 4자리로 입력해주세요.');
         return;
     }
 
     // Optimistic Update
     appPassword = newPwd;
     document.getElementById('new-password').value = '';
-    alert('비밀번호가 변경되었습니다!');
+    customAlert('비밀번호가 변경되었습니다!', 'success');
 
     // DB Update
     const { error } = await supabaseClient.from('app_settings').update({ app_password: appPassword }).eq('id', 1);
     if (error) {
         console.error('Failed to update app password', error);
-        alert('서버 저장에 실패했습니다. 다음 접속 시 풀릴 수 있습니다.');
+        customAlert('서버 저장에 실패했습니다. 다음 접속 시 풀릴 수 있습니다.', 'error');
     }
 }
 
@@ -345,7 +368,7 @@ async function handleAddTransaction(e) {
     const description = document.getElementById('description').value;
 
     if (!date || amount <= 0 || !category || !description) {
-        alert('모든 필드를 올바르게 입력해주세요.');
+        customAlert('모든 필드를 올바르게 입력해주세요.');
         return;
     }
 
@@ -388,13 +411,14 @@ async function handleAddTransaction(e) {
 window.deleteTransaction = async function(id) {
     // Optimistic Delete
     const originalTransactions = [...transactions];
-    transactions = transactions.filter(t => t.id !== id);
+    transactions = transactions.filter(t => String(t.id) !== String(id));
     render();
 
     const { error } = await supabaseClient.from('transactions').delete().eq('id', id);
     if (error) {
         console.error('Failed to delete transaction:', error);
-        alert('삭제에 실패했습니다.');
+        if (error.code === '22P02') return;
+        customAlert('서버 삭제 실패: ' + (error.message || '알 수 없는 오류'), 'error');
         transactions = originalTransactions; // Revert on failure
         render();
     }
@@ -411,8 +435,8 @@ function renderList() {
     
     // Filter by selected person AND selected month
     const filteredTransactions = transactions.filter(t => {
-        const tDate = new Date(t.date);
-        const matchesMonth = tDate.getFullYear() === currentListYear && tDate.getMonth() === currentListMonth;
+        const { year: stY, month: stM } = getSettlementPeriod(t.date);
+        const matchesMonth = stY === currentListYear && stM === currentListMonth;
         const matchesPerson = filter === 'all' || t.person === filter;
         
         return matchesMonth && matchesPerson;
@@ -424,8 +448,8 @@ function renderList() {
     let sumCommon = 0;
     
     transactions.forEach(t => {
-        const tDate = new Date(t.date);
-        if (tDate.getFullYear() === currentListYear && tDate.getMonth() === currentListMonth && t.type === 'expense') {
+        const { year: stY, month: stM } = getSettlementPeriod(t.date);
+        if (stY === currentListYear && stM === currentListMonth && t.type === 'expense') {
             if (t.person === 'A') sumA += t.amount;
             else if (t.person === 'B') sumB += t.amount;
             else if (t.person === 'Common') sumCommon += t.amount;
@@ -477,7 +501,7 @@ function renderList() {
             </div>
             <div class="item-right">
                 <span class="item-amount ${t.type}">${amountSign} ${formatCurrency(t.amount)}</span>
-                <button class="delete-btn" onclick="deleteTransaction('${t.id}')">
+                <button type="button" class="delete-btn" onclick="deleteTransaction('${t.id}')">
                     <i class="ri-delete-bin-line"></i>
                 </button>
             </div>
@@ -490,12 +514,12 @@ function renderList() {
 function updateSummaries() {
     // Current month filter for Dashboard Summaries
     const today = new Date();
-    const currentListYearStr = currentListYear || today.getFullYear();
-    const currentListMonthStr = currentListMonth !== undefined ? currentListMonth : today.getMonth();
+    const currentListYearNum = currentListYear || today.getFullYear();
+    const currentListMonthNum = currentListMonth !== undefined ? currentListMonth : today.getMonth();
 
     const monthTxs = transactions.filter(t => {
-        const d = new Date(t.date);
-        return d.getFullYear() === currentListYearStr && d.getMonth() === currentListMonthStr;
+        const { year: stY, month: stM } = getSettlementPeriod(t.date);
+        return stY === currentListYearNum && stM === currentListMonthNum;
     });
 
     // Total Stats (This month)
@@ -532,6 +556,213 @@ function saveData() {
     localStorage.setItem('coupleLedger_categories', JSON.stringify(customCategories));
 }
 
+// Data Import Handler (Excel / Google Sheets)
+async function handleDataImport(e) {
+    e.preventDefault();
+    
+    const importType = document.getElementById('import-type').value;
+    const yearStr = document.getElementById('import-year').value.trim();
+    const rawData = document.getElementById('import-textarea').value.trim();
+    const resultMsg = document.getElementById('import-result-msg');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+
+    if (!yearStr || !rawData) return;
+    
+    try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> 처리중...';
+        resultMsg.style.color = 'var(--text-main)';
+        resultMsg.textContent = '데이터를 분석 중입니다...';
+
+        const lines = rawData.split('\n').filter(line => line.trim() !== '');
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        if (importType === 'variable') {
+            // 변동 지출 (Variable Expenses)
+            // Expected format: Date (M/D) | Description | Amount | Category | Person (optional)
+            const newTransactions = [];
+            for (const line of lines) {
+                const cols = line.split('\t').map(c => c.trim());
+                if (cols.length < 3) continue; // Skip malformed lines
+                
+                // Parse Date (idx 0)
+                const datePart = cols[0];
+                let month, day;
+                if (datePart.includes('/')) {
+                    [month, day] = datePart.split('/');
+                } else if (datePart.includes('.')) {
+                    [month, day] = datePart.split('.');
+                } else {
+                    continue; // Unrecognized date
+                }
+                const formattedDate = `${yearStr}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                // Parse Description (idx 1)
+                const description = cols[1];
+                
+                // Parse Amount (idx 2)
+                let amountStr = cols[2].replace(/[^\d]/g, ''); // Remove commas and spaces and currency signs like ₩
+                const amount = parseInt(amountStr, 10);
+                if (isNaN(amount) || amount <= 0) continue;
+
+                // Parse Category (idx 3) or default
+                const category = cols[3] || '기타';
+
+                // Determine Person (idx 4)
+                // "요한", "은지", "부부", etc
+                let person = 'Common';
+                const pStr = (cols[4] || '').toLowerCase();
+                if (pStr.includes('요한') || pStr === 'a') person = 'A';
+                else if (pStr.includes('은지') || pStr === 'b') person = 'B';
+                
+                // Add default type as expense (most common for pasted ledgers)
+                newTransactions.push({
+                    type: 'expense',
+                    person,
+                    date: formattedDate,
+                    amount,
+                    category,
+                    description
+                });
+            }
+
+            if (newTransactions.length > 0) {
+                const { data, error } = await supabaseClient.from('transactions').insert(newTransactions).select();
+                if (!error && data) {
+                    transactions = [...data, ...transactions];
+                    successCount = data.length;
+                    transactions.sort((a,b) => new Date(b.date) - new Date(a.date)); // Keep sorted
+                } else {
+                    throw new Error('Supabase 저장 실패 (transactions)');
+                }
+            }
+            
+        } else if (importType === 'fixed-a' || importType === 'fixed-b') {
+            // 고정 지출 (Fixed Expenses)
+            // Expected format: Description | Amount | Note (optional)
+            const personTarget = importType === 'fixed-a' ? 'A' : 'B';
+            const newFixed = [];
+            
+            for (const line of lines) {
+                const cols = line.split('\t').map(c => c.trim());
+                if (cols.length < 2) continue; // Skip malformed
+                
+                const desc = cols[0];
+                let amountStr = cols[1].replace(/[^\d]/g, '');
+                const amount = parseInt(amountStr, 10);
+                
+                if (!desc || isNaN(amount) || amount <= 0) continue;
+
+                newFixed.push({
+                    person: personTarget,
+                    description: desc,
+                    amount: amount
+                });
+            }
+
+            if (newFixed.length > 0) {
+                const { data, error } = await supabaseClient.from('fixed_expenses').insert(newFixed).select();
+                if (!error && data) {
+                    const correctlyMapped = data.map(item => ({...item, desc: item.description}));
+                    fixedExpenses = [...fixedExpenses, ...correctlyMapped];
+                    successCount = data.length;
+                } else {
+                    throw new Error('Supabase 저장 실패 (fixed_expenses)');
+                }
+            }
+        }
+
+        resultMsg.style.color = '#10b981';
+        resultMsg.textContent = `가져오기 성공: ${successCount}개의 항목이 등록되었습니다.`;
+        document.getElementById('import-textarea').value = ''; // clear
+        
+        // Update UI
+        render();
+
+    } catch (err) {
+        console.error('Import Data Error:', err);
+        resultMsg.style.color = '#ef4444';
+        resultMsg.textContent = `가져오기 실패: 오류가 발생했습니다 (${err.message}). 형식에 맞게 붙여넣었는지 확인해주세요.`;
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="ri-upload-cloud-line"></i> 데이터 가져오기';
+    }
+}
+
+
+// Custom Modal Utility
+function customAlert(message, type = 'info') {
+    const modal = document.getElementById('custom-alert-modal');
+    const msgEl = document.getElementById('custom-alert-message');
+    const iconEl = document.getElementById('custom-alert-icon');
+    const titleEl = document.getElementById('custom-alert-title');
+    const btnCancel = document.getElementById('custom-alert-cancel-btn');
+
+    btnCancel.style.display = 'none';
+    msgEl.innerHTML = message.replace(/\n/g, '<br>');
+
+    if (type === 'success') {
+        iconEl.innerHTML = '<i class="ri-checkbox-circle-fill" style="color: #10b981;"></i>';
+        titleEl.textContent = '성공';
+    } else if (type === 'error') {
+        iconEl.innerHTML = '<i class="ri-error-warning-fill" style="color: #ef4444;"></i>';
+        titleEl.textContent = '오류';
+    } else {
+        iconEl.innerHTML = '<i class="ri-information-fill" style="color: var(--color-person-a);"></i>';
+        titleEl.textContent = '알림';
+    }
+
+    modal.classList.add('active');
+
+    return new Promise(resolve => {
+        const handleOk = () => {
+            modal.classList.remove('active');
+            document.getElementById('custom-alert-ok-btn').removeEventListener('click', handleOk);
+            resolve(true);
+        };
+        document.getElementById('custom-alert-ok-btn').addEventListener('click', handleOk);
+    });
+}
+
+function customConfirm(message) {
+    const modal = document.getElementById('custom-alert-modal');
+    const msgEl = document.getElementById('custom-alert-message');
+    const iconEl = document.getElementById('custom-alert-icon');
+    const titleEl = document.getElementById('custom-alert-title');
+    const btnOk = document.getElementById('custom-alert-ok-btn');
+    const btnCancel = document.getElementById('custom-alert-cancel-btn');
+
+    iconEl.innerHTML = '<i class="ri-question-fill" style="color: #f59e0b;"></i>';
+    titleEl.textContent = '확인 요청';
+    msgEl.innerHTML = message.replace(/\n/g, '<br>');
+    btnCancel.style.display = 'block';
+
+    modal.classList.add('active');
+
+    return new Promise(resolve => {
+        const handleOk = () => {
+            modal.classList.remove('active');
+            cleanup();
+            resolve(true);
+        };
+        const handleCancel = () => {
+            modal.classList.remove('active');
+            cleanup();
+            resolve(false);
+        };
+
+        const cleanup = () => {
+            btnOk.removeEventListener('click', handleOk);
+            btnCancel.removeEventListener('click', handleCancel);
+        };
+
+        btnOk.addEventListener('click', handleOk);
+        btnCancel.addEventListener('click', handleCancel);
+    });
+}
+
 // ---- Category Handling ---- //
 function updateCategorySelects() {
     const selector = document.getElementById('category');
@@ -557,7 +788,7 @@ async function handleAddCategory(e) {
     
     // Prevent duplicates
     if (customCategories.some(c => c.name === name)) {
-        alert('이미 존재하는 카테고리입니다.');
+        customAlert('이미 존재하는 카테고리입니다.', 'error');
         return;
     }
     
@@ -577,18 +808,40 @@ async function handleAddCategory(e) {
     }
 }
 
-window.deleteCategory = async function(id) {
+window.deleteCategory = async function(name) {
     if(customCategories.length <= 1) {
-        alert('최소 1개의 카테고리는 유지되어야 합니다.');
+        customAlert('최소 1개의 카테고리는 유지되어야 합니다.', 'error');
         return;
     }
+    
+    // Check if category name exists
+    const targetCat = customCategories.find(c => c.name === name);
+    if (!targetCat) return;
+
+    const isConfirmed = await customConfirm(`'${name}' 카테고리를 삭제하시겠습니까?`);
+    if (!isConfirmed) return;
+
     const originalCats = [...customCategories];
-    customCategories = customCategories.filter(c => c.id !== id);
+    customCategories = customCategories.filter(c => c.name !== name);
     render();
 
-    const { error } = await supabaseClient.from('custom_categories').delete().eq('id', id);
+    // Use name for deletion to bypass potential ID/UUID casting issues
+    const { error } = await supabaseClient.from('custom_categories').delete().eq('name', name);
     if (error) {
         console.error('Failed to delete category:', error);
+        
+        // Show error safely on screen
+        const listEl = document.getElementById('category-settings-list');
+        if (listEl && listEl.parentNode) {
+            const errDiv = document.createElement('div');
+            errDiv.style.color = '#ef4444';
+            errDiv.style.fontSize = '0.85rem';
+            errDiv.style.marginTop = '0.5rem';
+            errDiv.textContent = '삭제 실패: ' + (error.message || JSON.stringify(error));
+            listEl.parentNode.appendChild(errDiv);
+            setTimeout(() => errDiv.remove(), 4000);
+        }
+
         customCategories = originalCats;
         render();
     }
@@ -608,7 +861,7 @@ function renderSettingsCategories() {
                 <span class="category-color-box" style="background-color: ${c.color}"></span>
                 <strong style="color: var(--text-main); font-weight: 500;">${c.name}</strong>
             </div>
-            <button class="icon-btn small delete-btn" onclick="deleteCategory('${c.id}')" style="opacity: 1; padding: 0.25rem;">
+            <button type="button" class="icon-btn small delete-btn" onclick="deleteCategory('${c.name}')" style="opacity: 1; padding: 0.25rem;">
                 <i class="ri-delete-bin-line"></i>
             </button>
         `;
@@ -649,15 +902,20 @@ async function handleAddFixed(e, person) {
 }
 
 window.deleteFixed = async function(id) {
+    const isConfirmed = await customConfirm('해당 고정 지출을 삭제하시겠습니까?');
+    if (!isConfirmed) return;
+
     const orig = [...fixedExpenses];
-    fixedExpenses = fixedExpenses.filter(f => f.id !== id);
+    fixedExpenses = fixedExpenses.filter(f => String(f.id) !== String(id));
     render();
 
     const { error } = await supabaseClient.from('fixed_expenses').delete().eq('id', id);
     if (error) {
+        console.error('Failed to delete fixed expense:', error);
+        if (error.code === '22P02') return;
+        customAlert('고정 지출 삭제 실패: ' + (error.message || '알 수 없는 오류'), 'error');
         fixedExpenses = orig;
         render();
-        console.error('Failed to delete fixed expense:', error);
     }
 }
 
@@ -683,7 +941,7 @@ function renderFixed() {
                     <span class="fixed-desc">${f.desc}</span>
                     <div class="fixed-item-right">
                         <span class="fixed-amount">${formatCurrency(f.amount)}</span>
-                        <button class="delete-btn" style="opacity:1;" onclick="deleteFixed('${f.id}')">
+                        <button type="button" class="delete-btn" style="opacity:1;" onclick="deleteFixed('${f.id}')">
                             <i class="ri-close-circle-line"></i>
                         </button>
                     </div>
@@ -737,15 +995,20 @@ async function handleAddLoan(e) {
 }
 
 window.deleteLoan = async function(id) {
+    const isConfirmed = await customConfirm('해당 대출 항목을 삭제하시겠습니까? 상환 내역도 함께 삭제됩니다.');
+    if (!isConfirmed) return;
+
     const orig = [...loans];
-    loans = loans.filter(l => l.id !== id);
+    loans = loans.filter(l => String(l.id) !== String(id));
     render();
 
     const { error } = await supabaseClient.from('loans').delete().eq('id', id);
     if (error) {
+        console.error('Failed to delete loan:', error);
+        if (error.code === '22P02') return;
+        customAlert('대출 삭제 실패: ' + (error.message || '알 수 없는 오류'), 'error');
         loans = orig;
         render();
-        console.error('Failed to delete loan:', error);
     }
 }
 
@@ -789,7 +1052,7 @@ function renderLoans() {
                         </div>
                     </div>
                     <div class="loan-actions">
-                        <button class="delete-btn" style="opacity:1;" onclick="deleteLoan('${l.id}')">
+                        <button type="button" class="delete-btn" style="opacity:1;" onclick="deleteLoan('${l.id}')">
                             <i class="ri-close-circle-line"></i>
                         </button>
                     </div>
@@ -1038,8 +1301,8 @@ function renderAnalysis() {
     
     // Get Variable txs for current analysis month
     const varMonthTxs = transactions.filter(t => {
-        const d = new Date(t.date);
-        return d.getFullYear() === currentAnalysisYear && d.getMonth() === currentAnalysisMonth;
+        const { year: stY, month: stM } = getSettlementPeriod(t.date);
+        return stY === currentAnalysisYear && stM === currentAnalysisMonth;
     });
     
     // 1. Category Ranking & Savings
@@ -1111,8 +1374,8 @@ function renderTrendChart() {
         }
         
         const mtxs = transactions.filter(t => {
-            const d = new Date(t.date);
-            return d.getFullYear() === y && d.getMonth() === m;
+            const { year: stY, month: stM } = getSettlementPeriod(t.date);
+            return stY === y && stM === m;
         });
         
         // Exclude savings from variable expense chart? Or include? Let's exclude Savings from general spending trend
