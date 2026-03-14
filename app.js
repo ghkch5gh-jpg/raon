@@ -75,7 +75,7 @@ const els = {
 
 // Format Currency
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(amount);
+    return new Intl.NumberFormat('ko-KR', { style: 'decimal' }).format(amount) + '원';
 };
 
 // Settlement Period Logic (25th ~ 24th)
@@ -575,12 +575,12 @@ function renderList() {
                 <div class="item-icon" style="background: ${catColor}20; color: ${catColor}; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;">
                     ${personLabel}
                 </div>
-                <div class="item-details">
-                    <span class="item-title">${t.description}</span>
+                <div class="item-details" style="min-width: 0; flex: 1;">
+                    <span class="item-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${t.description}</span>
                     <div class="item-meta">
-                        <span>${t.date}</span>
+                        <span>${t.date.substring(5).replace('-', '.')}</span>
                         <span>•</span>
-                        <span style="color: ${catColor}; font-weight: 500;">${t.category}</span>
+                        <span style="color: ${catColor}; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;">${t.category}</span>
                     </div>
                 </div>
             </div>
@@ -1314,11 +1314,11 @@ function renderCalendar() {
         let contentHtml = `<div class="day-number">${day}</div><div class="day-summary">`;
         
         if (dailyIncome > 0) {
-            const shortInc = dailyIncome >= 10000 ? (dailyIncome/10000).toFixed(0) + '만' : dailyIncome.toLocaleString();
+            const shortInc = dailyIncome >= 10000 ? (dailyIncome/10000).toFixed(0) : dailyIncome.toLocaleString();
             contentHtml += `<div class="day-income">+${shortInc}</div>`;
         }
         if (dailyExpense > 0) {
-            const shortExp = dailyExpense >= 10000 ? (dailyExpense/10000).toFixed(0) + '만' : dailyExpense.toLocaleString();
+            const shortExp = dailyExpense >= 10000 ? (dailyExpense/10000).toFixed(0) : dailyExpense.toLocaleString();
             contentHtml += `<div class="day-expense">-${shortExp}</div>`;
         }
         
@@ -1520,8 +1520,8 @@ function renderTrendChart() {
         const fixedPct = data.total === 0 ? 0 : (data.fixedExp / data.total) * 100;
         const varPct = data.total === 0 ? 0 : (data.varExp / data.total) * 100;
         
-        const shortVal = data.total >= 10000 ? (data.total / 10000).toFixed(0) + '만' : formatCurrency(data.total);
-        const detailText = `총 ${formatCurrency(data.total)}<br>변동: ${(data.varExp/10000).toFixed(0)}만 / 고정: ${(data.fixedExp/10000).toFixed(0)}만`;
+        const shortVal = data.total >= 10000 ? (data.total / 10000).toFixed(0) : formatCurrency(data.total);
+        const detailText = `총 ${formatCurrency(data.total)}<br>변동: ${(data.varExp/10000).toFixed(0)} / 고정: ${(data.fixedExp/10000).toFixed(0)}`;
         
         const wrapper = document.createElement('div');
         wrapper.className = 'trend-bar-wrapper';
