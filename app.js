@@ -122,7 +122,9 @@ async function init() {
 
         // Fetch Fixed Expenses
         const { data: fixedData } = await supabaseClient.from('fixed_expenses').select('*').order('created_at', { ascending: true });
-        if (fixedData) fixedExpenses = fixedData;
+        if (fixedData) {
+            fixedExpenses = fixedData.map(item => ({...item, desc: item.description}));
+        }
 
         // Fetch Loans
         const { data: loansData } = await supabaseClient.from('loans').select('*').order('created_at', { ascending: true });
@@ -748,6 +750,7 @@ async function handleDataImport(e) {
             if (newFixed.length > 0) {
                 const { data, error } = await supabaseClient.from('fixed_expenses').insert(newFixed).select();
                 if (!error && data) {
+                    // Update: Ensure we map `description` to `desc` so the UI renderer (`renderFixed`) doesn't show undefined
                     const correctlyMapped = data.map(item => ({...item, desc: item.description}));
                     fixedExpenses = [...fixedExpenses, ...correctlyMapped];
                     successCount = data.length;
@@ -963,8 +966,9 @@ async function handleAddFixed(e, person) {
     
     if (!desc || amount <= 0) return;
     
+    // Default to false (unchecked)
     const newFixed = { person, description: desc, amount };
-    const uiFixed = { ...newFixed, id: Date.now().toString(), desc }; // keeping 'desc' internally for old code compatibility temporarily
+    const uiFixed = { ...newFixed, id: Date.now().toString(), desc, is_checked: false }; 
     
     fixedExpenses.push(uiFixed);
     
@@ -1002,6 +1006,25 @@ window.deleteFixed = async function(id) {
     }
 }
 
+// Toggle Checkbox Status
+window.toggleFixedCheck = async function(id, isChecked) {
+    const idx = fixedExpenses.findIndex(f => String(f.id) === String(id));
+    if (idx !== -1) {
+        fixedExpenses[idx].is_checked = isChecked;
+        
+        const { error } = await supabaseClient.from('fixed_expenses').update({ is_checked: isChecked }).eq('id', id);
+        if (error) {
+            console.error('Failed to update fixed expense check status:', error);
+            customAlert('저장에 실패했습니다. 데이터베이스에 is_checked 열(column)이 없거나 권한이 없을 수 있습니다.', 'error');
+            fixedExpenses[idx].is_checked = !isChecked; // revert
+            renderFixed();
+        } else {
+            // Re-render nicely upon success without jumping beforehand if not needed.
+            renderFixed();
+        }
+    }
+}
+
 function renderFixed() {
     const listA = fixedExpenses.filter(f => f.person === 'A');
     const listB = fixedExpenses.filter(f => f.person === 'B');
@@ -1018,11 +1041,19 @@ function renderFixed() {
         } else {
             list.forEach(f => {
                 total += f.amount;
+                
+                const isCheckedStr = f.is_checked ? 'checked' : '';
+                const checkedClass = f.is_checked ? 'checked' : '';
+                
                 const item = document.createElement('div');
-                item.className = 'fixed-item';
+                item.className = `fixed-item ${checkedClass}`;
                 item.innerHTML = `
-                    <span class="fixed-desc">${f.desc}</span>
-                    <div class="fixed-item-right">
+                    <div class="fixed-item-left">
+                        <input type="checkbox" class="fixed-checkbox" ${isCheckedStr} onchange="toggleFixedCheck('${f.id}', this.checked)">
+                        <span class="fixed-desc">${f.desc || f.description}</span>
+                    </div>
+                    
+                    <div class="fixed-item-right" style="flex-shrink: 0;">
                         <span class="fixed-amount">${formatCurrency(f.amount)}</span>
                         <button type="button" class="delete-btn" style="opacity:1;" onclick="deleteFixed('${f.id}')">
                             <i class="ri-close-circle-line"></i>
