@@ -35,6 +35,7 @@ let currentMonth = currentCalDate.getMonth(); // 0-indexed
 // List View State
 let currentListYear = currentYear;
 let currentListMonth = currentMonth;
+let filterCategoryStr = 'all'; // New Global Category Filter State
 
 // Analysis View State
 let currentAnalysisYear = currentYear;
@@ -252,23 +253,69 @@ function checkAuthentication() {
     lockScreen.style.display = 'flex';
     mainApp.style.display = 'none';
 
-    if (lockForm) {
-        lockForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const inputVal = lockInput.value.trim();
-            if (inputVal === appPassword) {
-                // Success
-                sessionStorage.setItem('isAuthenticated', 'true');
-                lockScreen.style.display = 'none';
-                mainApp.style.display = 'flex';
-                render();
+    // Keypad Logic
+    let currentPin = '';
+    const pinDots = document.querySelectorAll('.pin-dot');
+    const keypadBtns = document.querySelectorAll('.keypad-btn[data-key]');
+    const backspaceBtn = document.getElementById('keypad-backspace');
+
+    const updatePinDisplay = () => {
+        pinDots.forEach((dot, index) => {
+            if (index < currentPin.length) {
+                dot.classList.add('filled');
             } else {
-                // Fail
-                lockError.style.display = 'block';
-                lockInput.value = '';
-                lockInput.focus();
+                dot.classList.remove('filled');
             }
         });
+    };
+
+    const handlePinInput = (digit) => {
+        if (currentPin.length < 4) {
+            currentPin += digit;
+            updatePinDisplay();
+            lockError.style.display = 'none';
+
+            if (currentPin.length === 4) {
+                setTimeout(() => verifyPin(), 150); // Small delay to show last dot filled
+            }
+        }
+    };
+
+    const handleBackspace = () => {
+        if (currentPin.length > 0) {
+            currentPin = currentPin.slice(0, -1);
+            updatePinDisplay();
+            lockError.style.display = 'none';
+        }
+    };
+
+    const verifyPin = () => {
+        if (currentPin === appPassword) {
+            // Success
+            sessionStorage.setItem('isAuthenticated', 'true');
+            lockScreen.style.display = 'none';
+            mainApp.style.display = 'flex';
+            render();
+        } else {
+            // Fail
+            lockError.style.display = 'block';
+            currentPin = '';
+            updatePinDisplay();
+            
+            // Add shake effect to display wrapper
+            const displayWrap = document.getElementById('pin-display');
+            displayWrap.style.animation = 'none';
+            displayWrap.offsetHeight; /* trigger reflow */
+            displayWrap.style.animation = 'shake 0.4s ease-in-out';
+        }
+    };
+
+    keypadBtns.forEach(btn => {
+        btn.addEventListener('click', () => handlePinInput(btn.dataset.key));
+    });
+
+    if (backspaceBtn) {
+        backspaceBtn.addEventListener('click', handleBackspace);
     }
 }
 
@@ -515,13 +562,19 @@ function renderList() {
         monthDisplay.textContent = `${currentListYear}. ${String(currentListMonth + 1).padStart(2, '0')}`;
     }
     
-    // Filter by selected person AND selected month
+    // Filter by selected person AND selected month AND category string
     let filteredTransactions = transactions.filter(t => {
         const { year: stY, month: stM } = getSettlementPeriod(t.date);
         const matchesMonth = stY === currentListYear && stM === currentListMonth;
         const matchesPerson = filter === 'all' || t.person === filter;
         
-        return matchesMonth && matchesPerson;
+        // Expense Category Filter
+        let matchesCategory = true;
+        if (filterCategoryStr !== 'all') {
+            matchesCategory = t.type === 'expense' && (t.category === filterCategoryStr || (t.category == null && filterCategoryStr === '기타'));
+        }
+        
+        return matchesMonth && matchesPerson && matchesCategory;
     });
 
     // Sort chronologically by date (newest to oldest)
@@ -548,8 +601,26 @@ function renderList() {
     listEl.innerHTML = '';
 
     if (filteredTransactions.length === 0) {
-        listEl.innerHTML = '<div class="empty-state">내역이 없습니다.</div>';
-        return;
+        let emptyHtml = '<div class="empty-state">내역이 없습니다.</div>';
+        if (filterCategoryStr !== 'all') {
+             emptyHtml = `
+             <div class="active-filter-banner glass-panel" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 12px;">
+                 <span style="font-weight: 600; color: #1e40af;"><i class="ri-filter-3-line"></i> '${filterCategoryStr}' 카테고리만 보는 중</span>
+                 <button type="button" class="icon-btn small clear-cat-filter-btn" style="background: white; color: #ef4444;"><i class="ri-close-line"></i> 필터 해제</button>
+             </div>
+             ` + emptyHtml;
+        }
+        listEl.innerHTML = emptyHtml;
+    } else {
+        // If there's an active category filter, inject the banner at the top
+        if (filterCategoryStr !== 'all') {
+            listEl.innerHTML = `
+            <div class="active-filter-banner glass-panel" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 12px;">
+                <span style="font-weight: 600; color: #1e40af;"><i class="ri-filter-3-line"></i> '${filterCategoryStr}' 카테고리만 보는 중</span>
+                <button type="button" class="icon-btn small clear-cat-filter-btn" style="background: white; color: #ef4444;"><i class="ri-close-line"></i> 필터 해제</button>
+            </div>
+            `;
+        }
     }
 
     filteredTransactions.forEach(t => {
@@ -592,6 +663,14 @@ function renderList() {
             </div>
         `;
         listEl.appendChild(item);
+    });
+
+    // Attach event listeners for clearing the category filter, if present
+    document.querySelectorAll('.clear-cat-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterCategoryStr = 'all';
+            renderList();
+        });
     });
 }
 

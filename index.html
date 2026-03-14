@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>라온이네</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>라온이네</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -12,7 +19,7 @@
     <meta name="theme-color" content="#a78bfa">
     <link rel="apple-touch-icon" href="icon-512.png">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="toss-style.css?v=8">
+    <link rel="stylesheet" href="toss-style.css?v=11">
 </head>
 <body>
     <!-- Lock Screen -->
@@ -20,12 +27,28 @@
         <div class="lock-panel glass-panel">
             <div class="lock-icon"><i class="ri-lock-2-line"></i></div>
             <h2>2026 라온이네</h2>
-            <p>비밀번호를 입력해주세요.</p>
-            <form id="lock-form">
-                <input type="password" id="lock-password-input" placeholder="비밀번호 4자리" maxlength="4" required>
-                <button type="submit" class="submit-btn" style="margin-top: 1rem;">열기</button>
-            </form>
+            <div class="pin-display" id="pin-display">
+                <span class="pin-dot"></span>
+                <span class="pin-dot"></span>
+                <span class="pin-dot"></span>
+                <span class="pin-dot"></span>
+            </div>
             <p id="lock-error-msg" class="error-msg" style="display: none;">비밀번호가 일치하지 않습니다.</p>
+            
+            <div class="keypad">
+                <button class="keypad-btn" type="button" data-key="1">1</button>
+                <button class="keypad-btn" type="button" data-key="2">2</button>
+                <button class="keypad-btn" type="button" data-key="3">3</button>
+                <button class="keypad-btn" type="button" data-key="4">4</button>
+                <button class="keypad-btn" type="button" data-key="5">5</button>
+                <button class="keypad-btn" type="button" data-key="6">6</button>
+                <button class="keypad-btn" type="button" data-key="7">7</button>
+                <button class="keypad-btn" type="button" data-key="8">8</button>
+                <button class="keypad-btn" type="button" data-key="9">9</button>
+                <button class="keypad-btn empty" type="button" disabled></button>
+                <button class="keypad-btn" type="button" data-key="0">0</button>
+                <button class="keypad-btn icon-btn" type="button" id="keypad-backspace"><i class="ri-delete-back-2-line"></i></button>
+            </div>
         </div>
     </div>
 
@@ -579,6 +602,6 @@
 
     <!-- Supabase and App Script -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=5"></script>
+    <script src="app.js?v=8"></script>
 </body>
 </html>
