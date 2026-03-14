@@ -605,8 +605,8 @@ function renderList() {
         if (filterCategoryStr !== 'all') {
              emptyHtml = `
              <div class="active-filter-banner glass-panel" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 12px;">
-                 <span style="font-weight: 600; color: #1e40af;"><i class="ri-filter-3-line"></i> '${filterCategoryStr}' 카테고리만 보는 중</span>
-                 <button type="button" class="icon-btn small clear-cat-filter-btn" style="background: white; color: #ef4444;"><i class="ri-close-line"></i> 필터 해제</button>
+                 <span style="font-weight: 600; color: #1e40af;"><i class="ri-filter-3-line" style="margin-right: 4px;"></i> '${filterCategoryStr}' 모아보기</span>
+                 <button type="button" class="icon-btn small clear-cat-filter-btn" style="background: white; color: #ef4444; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0;"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
              </div>
              ` + emptyHtml;
         }
@@ -616,8 +616,8 @@ function renderList() {
         if (filterCategoryStr !== 'all') {
             listEl.innerHTML = `
             <div class="active-filter-banner glass-panel" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: space-between; border-radius: 12px;">
-                <span style="font-weight: 600; color: #1e40af;"><i class="ri-filter-3-line"></i> '${filterCategoryStr}' 카테고리만 보는 중</span>
-                <button type="button" class="icon-btn small clear-cat-filter-btn" style="background: white; color: #ef4444;"><i class="ri-close-line"></i> 필터 해제</button>
+                <span style="font-weight: 600; color: #1e40af;"><i class="ri-filter-3-line" style="margin-right: 4px;"></i> '${filterCategoryStr}' 모아보기</span>
+                <button type="button" class="icon-btn small clear-cat-filter-btn" style="background: white; color: #ef4444; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0;"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
             </div>
             `;
         }
@@ -1527,11 +1527,12 @@ function renderAnalysis() {
     } else {
         const maxCatAmount = sortedCats[0][1];
         sortedCats.forEach(cat => {
+            const catName = cat[0];
             const pct = Math.max(2, Math.round((cat[1] / maxCatAmount) * 100));
             const itemHtml = `
-                <div class="category-item">
+                <div class="category-item clickable-cat-item" data-cat="${catName}" style="cursor: pointer; padding: 0.25rem; border-radius: 8px; transition: background 0.2s;">
                     <div class="category-info">
-                        <span class="category-name">${cat[0]}</span>
+                        <span class="category-name">${catName}</span>
                         <span class="category-amount">${formatCurrency(cat[1])}</span>
                     </div>
                     <div class="category-bar-bg">
@@ -1540,6 +1541,50 @@ function renderAnalysis() {
                 </div>
             `;
             catListContainer.innerHTML += itemHtml;
+        });
+
+        // Add hover styles to document head just in case
+        if (!document.getElementById('clickable-cat-styles')) {
+            const style = document.createElement('style');
+            style.id = 'clickable-cat-styles';
+            style.innerHTML = `
+                .clickable-cat-item:hover { background: rgba(0, 0, 0, 0.04); }
+                .clickable-cat-item:active { background: rgba(0, 0, 0, 0.08); transform: scale(0.98); }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Attach Click Listeners
+        document.querySelectorAll('.clickable-cat-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const clickedCat = e.currentTarget.dataset.cat;
+                
+                // Set the List's Year/Month to the Analysis's Year/Month
+                currentListYear = currentAnalysisYear;
+                currentListMonth = currentAnalysisMonth;
+                
+                // Set Global Filter
+                filterCategoryStr = clickedCat;
+                
+                // Switch Tabs
+                const tabBtns = document.querySelectorAll('.tab-btn');
+                const tabContents = document.querySelectorAll('.tab-content');
+                
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                const targetBtn = document.querySelector('.tab-btn[data-tab="tab-transactions"]');
+                const targetContent = document.getElementById('tab-transactions');
+                
+                if (targetBtn) targetBtn.classList.add('active');
+                if (targetContent) targetContent.classList.add('active');
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Render List
+                renderList();
+            });
         });
     }
     
