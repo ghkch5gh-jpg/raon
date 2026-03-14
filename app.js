@@ -10,7 +10,7 @@ let fixedExpenses = [];
 let loans = [];
 
 // App Settings (will be loaded from Supabase soon, use defaults meanwhile)
-let appTitle = '우리의 가계부';
+let appTitle = '라온이네';
 let appLogoEmoji = '👛';
 let personAEmoji = '👨';
 let personBEmoji = '👩';
@@ -1430,7 +1430,7 @@ let currentEmojiTarget = null; // 'appLogo', 'personA', 'personB'
 function initEmojiModal() {
     // Initial Render of Emojis from state
     const logoIcon = document.getElementById('app-logo-icon');
-    if (logoIcon) logoIcon.textContent = appLogoEmoji;
+    if (logoIcon) logoIcon.textContent = appLogoEmoji; 
     
     const avatarDashA = document.getElementById('avatar-dash-a');
     if (avatarDashA) avatarDashA.textContent = personAEmoji;
@@ -1456,7 +1456,7 @@ function initEmojiModal() {
         btn.textContent = emoji;
         btn.style.cssText = 'background:none; border:none; cursor:pointer; font-size:1.75rem; transition: transform 0.2s; border-radius: 8px; padding: 0.25rem;';
         
-        btn.addEventListener('mouseover', () => btn.style.background = 'rgba(255,255,255,0.1)');
+        btn.addEventListener('mouseover', () => btn.style.background = 'rgba(0,0,0,0.05)');
         btn.addEventListener('mouseout', () => btn.style.background = 'none');
 
         btn.addEventListener('click', () => {
